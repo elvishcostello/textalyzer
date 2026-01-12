@@ -17,7 +17,7 @@ TEXT_URL_TEMPLATE = "https://www.gutenberg.org/cache/epub/{book_id}/pg{book_id}.
 EBOOK_URL_TEMPLATE = "https://www.gutenberg.org/ebooks/{book_id}"
 
 DEFAULT_BOOK_IDS_PATH = Path("book-ids.dat")
-DEFAULT_STORE_PATH = Path("file-store")
+DEFAULT_STORE_PATH = Path("text-store")
 
 
 def load_book_ids(path: Path) -> list[str]:

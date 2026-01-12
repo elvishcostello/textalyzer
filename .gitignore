@@ -1,5 +1,6 @@
-# file store - keep local
-file-store/
+# generated data - keep local
+text-store/
+db/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
