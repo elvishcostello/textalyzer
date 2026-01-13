@@ -12,6 +12,8 @@ from textalyzer.config import (
     END_MARKER_RE,
     LOG_FORMAT,
     LOG_LEVEL,
+    MIN_PARAGRAPH_LENGTH,
+    SKIP_PARAGRAPH_PATTERNS,
     START_MARKER_RE,
     TEXT_URL_TEMPLATE,
     setup_logging,
@@ -52,6 +54,15 @@ class TestConfigConstants:
         """URL templates should point to gutenberg.org."""
         assert "gutenberg.org" in TEXT_URL_TEMPLATE
         assert "gutenberg.org" in EBOOK_URL_TEMPLATE
+
+    def test_min_paragraph_length(self) -> None:
+        """MIN_PARAGRAPH_LENGTH should be set to 4."""
+        assert MIN_PARAGRAPH_LENGTH == 4
+
+    def test_skip_paragraph_patterns(self) -> None:
+        """SKIP_PARAGRAPH_PATTERNS should contain expected patterns."""
+        assert "[_Copyright" in SKIP_PARAGRAPH_PATTERNS
+        assert "[Illustration]" in SKIP_PARAGRAPH_PATTERNS
 
 
 class TestRegexPatterns:

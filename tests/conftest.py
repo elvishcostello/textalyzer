@@ -32,14 +32,19 @@ def sample_html_with_meta() -> str:
 
 @pytest.fixture
 def sample_gutenberg_text() -> str:
-    """Sample Project Gutenberg text with markers."""
+    """Sample Project Gutenberg text with markers and multiple paragraphs."""
     return """The Project Gutenberg eBook of Test Book
 
 *** START OF THE PROJECT GUTENBERG EBOOK TEST BOOK ***
 
-This is the actual content of the book.
-It has multiple lines.
-And some more text here.
+This is the first paragraph of the book.
+It has multiple lines within the same paragraph.
+
+This is the second paragraph.
+It also spans multiple lines.
+
+A third paragraph here with some more content
+that continues on another line.
 
 *** END OF THE PROJECT GUTENBERG EBOOK TEST BOOK ***
 
