@@ -29,10 +29,24 @@ select = ["E", "F", "I", "W"]
 pythonVersion = "3.11"
 typeCheckingMode = "basic"
 
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--cov=textalyzer --cov-report=term-missing"
+
+[tool.coverage.run]
+source = ["src/textalyzer"]
+branch = true
+
+[tool.coverage.report]
+exclude_lines = [
+    "if __name__ == .__main__.:",
+]
+
 [dependency-groups]
 dev = [
     "pyright>=1.1.408",
     "pytest>=9.0.2",
+    "pytest-cov>=7.0.0",
     "pytest-mock>=3.15.1",
     "ruff>=0.14.11",
 ]

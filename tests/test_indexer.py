@@ -241,6 +241,18 @@ class TestIndexBooks:
         assert result == 0
         mock_conn.execute.assert_not_called()
 
+    def test_index_books_skips_invalid_filename(
+        self, tmp_path: Path, sample_gutenberg_text: str
+    ) -> None:
+        """index_books should skip files that don't match pg*.txt pattern."""
+        # Create a file that matches glob but has invalid ID format
+        (tmp_path / "pg.txt").write_text(sample_gutenberg_text)
+        mock_conn = MagicMock()
+
+        result = index_books(tmp_path, mock_conn)
+
+        assert result == 0
+
     def test_index_books_indexes_valid_book(
         self,
         tmp_path: Path,

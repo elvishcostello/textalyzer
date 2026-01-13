@@ -100,6 +100,15 @@ class TestExtractMetaTags:
 
         assert result == []
 
+    def test_extract_meta_tags_skips_empty_attrs(self) -> None:
+        """extract_meta_tags should skip meta tags with no attributes."""
+        html = "<html><head><meta><meta name='test' content='value'></head></html>"
+        result = extract_meta_tags(html)
+
+        # Should only include the meta tag with attributes
+        assert len(result) == 1
+        assert result[0]["name"] == "test"
+
 
 class TestDownloadText:
     """Tests for download_text function."""
