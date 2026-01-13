@@ -1,0 +1,357 @@
+"""Tests for indexer module."""
+
+from pathlib import Path
+from unittest.mock import MagicMock, patch
+
+import pytest
+
+from textalyzer.indexer import (
+    create_database,
+    extract_book_content,
+    get_book_id_from_filename,
+    index_books,
+    load_metadata,
+    main,
+    parse_author_title,
+)
+
+
+class TestExtractBookContent:
+    """Tests for extract_book_content function."""
+
+    def test_extract_book_content_success(self, sample_gutenberg_text: str) -> None:
+        """extract_book_content should extract content between markers."""
+        result = extract_book_content(sample_gutenberg_text)
+
+        assert result is not None
+        assert "This is the actual content of the book" in result
+        assert "multiple lines" in result
+        assert "START OF THE PROJECT" not in result
+        assert "END OF THE PROJECT" not in result
+
+    def test_extract_book_content_no_start_marker(self) -> None:
+        """extract_book_content should return None without start marker."""
+        text = """Some text here
+*** END OF THE PROJECT GUTENBERG EBOOK TEST ***
+More text"""
+
+        result = extract_book_content(text)
+
+        assert result is None
+
+    def test_extract_book_content_no_end_marker(self) -> None:
+        """extract_book_content should return None without end marker."""
+        text = """Some text here
+*** START OF THE PROJECT GUTENBERG EBOOK TEST ***
+Content without end marker"""
+
+        result = extract_book_content(text)
+
+        assert result is None
+
+    def test_extract_book_content_markers_wrong_order(self) -> None:
+        """extract_book_content should return None if markers in wrong order."""
+        text = """
+*** END OF THE PROJECT GUTENBERG EBOOK TEST ***
+Content here
+*** START OF THE PROJECT GUTENBERG EBOOK TEST ***
+"""
+
+        result = extract_book_content(text)
+
+        assert result is None
+
+    def test_extract_book_content_strips_whitespace(
+        self, sample_gutenberg_text: str
+    ) -> None:
+        """extract_book_content should strip leading/trailing whitespace."""
+        result = extract_book_content(sample_gutenberg_text)
+
+        assert result is not None
+        assert not result.startswith("\n")
+        assert not result.endswith("\n")
+
+
+class TestParseAuthorTitle:
+    """Tests for parse_author_title function."""
+
+    def test_parse_author_title_with_by(self) -> None:
+        """parse_author_title should split on ' by '."""
+        result = parse_author_title("Pride and Prejudice by Jane Austen")
+
+        assert result == ("Jane Austen", "Pride and Prejudice")
+
+    def test_parse_author_title_without_by(self) -> None:
+        """parse_author_title should return empty author without ' by '."""
+        result = parse_author_title("Untitled Work")
+
+        assert result == ("", "Untitled Work")
+
+    def test_parse_author_title_multiple_by(self) -> None:
+        """parse_author_title should split on last ' by '."""
+        result = parse_author_title("Stand by Me by Stephen King")
+
+        assert result == ("Stephen King", "Stand by Me")
+
+    def test_parse_author_title_strips_whitespace(self) -> None:
+        """parse_author_title should strip whitespace from results."""
+        result = parse_author_title("  Title  by  Author  ")
+
+        assert result == ("Author", "Title")
+
+
+class TestLoadMetadata:
+    """Tests for load_metadata function."""
+
+    def test_load_metadata_finds_title(
+        self, tmp_path: Path, sample_metadata_json: str
+    ) -> None:
+        """load_metadata should find and parse title."""
+        meta_file = tmp_path / "meta.json"
+        meta_file.write_text(sample_metadata_json)
+
+        result = load_metadata(meta_file)
+
+        assert result["title"] == "Pride and Prejudice"
+        assert result["author"] == "Jane Austen"
+
+    def test_load_metadata_no_title_tag(self, tmp_path: Path) -> None:
+        """load_metadata should return empty strings without title tag."""
+        meta_file = tmp_path / "meta.json"
+        meta_file.write_text('[{"name": "other", "content": "value"}]')
+
+        result = load_metadata(meta_file)
+
+        assert result == {"author": "", "title": ""}
+
+    def test_load_metadata_empty_json_array(self, tmp_path: Path) -> None:
+        """load_metadata should return empty strings for empty array."""
+        meta_file = tmp_path / "meta.json"
+        meta_file.write_text("[]")
+
+        result = load_metadata(meta_file)
+
+        assert result == {"author": "", "title": ""}
+
+
+class TestGetBookIdFromFilename:
+    """Tests for get_book_id_from_filename function."""
+
+    def test_get_book_id_standard_format(self) -> None:
+        """get_book_id_from_filename should extract ID from pg*.txt."""
+        result = get_book_id_from_filename("pg12345.txt")
+
+        assert result == "12345"
+
+    def test_get_book_id_large_number(self) -> None:
+        """get_book_id_from_filename should handle large IDs."""
+        result = get_book_id_from_filename("pg9999999.txt")
+
+        assert result == "9999999"
+
+    def test_get_book_id_invalid_format(self) -> None:
+        """get_book_id_from_filename should return empty for invalid format."""
+        result = get_book_id_from_filename("book12345.txt")
+
+        assert result == ""
+
+    def test_get_book_id_wrong_extension(self) -> None:
+        """get_book_id_from_filename should return empty for wrong extension."""
+        result = get_book_id_from_filename("pg12345.pdf")
+
+        assert result == ""
+
+
+class TestCreateDatabase:
+    """Tests for create_database function."""
+
+    def test_create_database_creates_parent_dirs(self, tmp_path: Path) -> None:
+        """create_database should create parent directories."""
+        db_path = tmp_path / "nested" / "dir" / "test.db"
+
+        conn = create_database(db_path)
+
+        try:
+            assert db_path.parent.exists()
+        finally:
+            conn.close()
+
+    def test_create_database_creates_file(self, tmp_path: Path) -> None:
+        """create_database should create the database file."""
+        db_path = tmp_path / "test.db"
+
+        conn = create_database(db_path)
+
+        try:
+            assert db_path.exists()
+        finally:
+            conn.close()
+
+    def test_create_database_creates_books_table(self, tmp_path: Path) -> None:
+        """create_database should create books FTS5 table."""
+        db_path = tmp_path / "test.db"
+
+        conn = create_database(db_path)
+
+        try:
+            cursor = conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='books'"
+            )
+            result = cursor.fetchone()
+            assert result is not None
+        finally:
+            conn.close()
+
+    @patch("textalyzer.indexer.sqlite3.connect")
+    def test_create_database_drops_existing_table(
+        self, mock_connect: MagicMock, tmp_path: Path
+    ) -> None:
+        """create_database should drop existing books table."""
+        mock_conn = MagicMock()
+        mock_connect.return_value = mock_conn
+        db_path = tmp_path / "test.db"
+        db_path.parent.mkdir(parents=True, exist_ok=True)
+
+        create_database(db_path)
+
+        calls = [str(call) for call in mock_conn.execute.call_args_list]
+        assert any("DROP TABLE IF EXISTS books" in call for call in calls)
+
+
+class TestIndexBooks:
+    """Tests for index_books function."""
+
+    def test_index_books_empty_store(self, tmp_path: Path) -> None:
+        """index_books should return 0 for empty store."""
+        mock_conn = MagicMock()
+
+        result = index_books(tmp_path, mock_conn)
+
+        assert result == 0
+
+    def test_index_books_skips_without_metadata(
+        self, tmp_path: Path, sample_gutenberg_text: str
+    ) -> None:
+        """index_books should skip files without metadata."""
+        (tmp_path / "pg12345.txt").write_text(sample_gutenberg_text)
+        mock_conn = MagicMock()
+
+        result = index_books(tmp_path, mock_conn)
+
+        assert result == 0
+        mock_conn.execute.assert_not_called()
+
+    def test_index_books_skips_invalid_filename(
+        self, tmp_path: Path, sample_gutenberg_text: str
+    ) -> None:
+        """index_books should skip files that don't match pg*.txt pattern."""
+        # Create a file that matches glob but has invalid ID format
+        (tmp_path / "pg.txt").write_text(sample_gutenberg_text)
+        mock_conn = MagicMock()
+
+        result = index_books(tmp_path, mock_conn)
+
+        assert result == 0
+
+    def test_index_books_indexes_valid_book(
+        self,
+        tmp_path: Path,
+        sample_gutenberg_text: str,
+        sample_metadata_json: str,
+    ) -> None:
+        """index_books should index book with text and metadata."""
+        (tmp_path / "pg12345.txt").write_text(sample_gutenberg_text)
+        (tmp_path / "12345-meta.json").write_text(sample_metadata_json)
+        mock_conn = MagicMock()
+
+        result = index_books(tmp_path, mock_conn)
+
+        assert result == 1
+        mock_conn.execute.assert_called()
+        mock_conn.commit.assert_called_once()
+
+    def test_index_books_skips_invalid_content(
+        self, tmp_path: Path, sample_metadata_json: str
+    ) -> None:
+        """index_books should skip books without valid content markers."""
+        (tmp_path / "pg12345.txt").write_text("No markers here")
+        (tmp_path / "12345-meta.json").write_text(sample_metadata_json)
+        mock_conn = MagicMock()
+
+        result = index_books(tmp_path, mock_conn)
+
+        assert result == 0
+
+    def test_index_books_processes_multiple_books(
+        self,
+        tmp_path: Path,
+        sample_gutenberg_text: str,
+        sample_metadata_json: str,
+    ) -> None:
+        """index_books should process multiple books."""
+        for book_id in ["111", "222", "333"]:
+            (tmp_path / f"pg{book_id}.txt").write_text(sample_gutenberg_text)
+            (tmp_path / f"{book_id}-meta.json").write_text(sample_metadata_json)
+        mock_conn = MagicMock()
+
+        result = index_books(tmp_path, mock_conn)
+
+        assert result == 3
+
+
+class TestMain:
+    """Tests for main function."""
+
+    @patch("textalyzer.indexer.DEFAULT_STORE_PATH")
+    def test_main_exits_if_store_missing(self, mock_store_path: MagicMock) -> None:
+        """main should exit early if store path doesn't exist."""
+        mock_store_path.exists.return_value = False
+
+        with patch("textalyzer.indexer.create_database") as mock_create_db:
+            main()
+            mock_create_db.assert_not_called()
+
+    @patch("textalyzer.indexer.index_books")
+    @patch("textalyzer.indexer.create_database")
+    @patch("textalyzer.indexer.DEFAULT_STORE_PATH")
+    @patch("textalyzer.indexer.DEFAULT_DB_PATH")
+    def test_main_creates_database_and_indexes(
+        self,
+        mock_db_path: MagicMock,
+        mock_store_path: MagicMock,
+        mock_create_db: MagicMock,
+        mock_index_books: MagicMock,
+    ) -> None:
+        """main should create database and index books."""
+        mock_store_path.exists.return_value = True
+        mock_conn = MagicMock()
+        mock_create_db.return_value = mock_conn
+        mock_index_books.return_value = 5
+
+        main()
+
+        mock_create_db.assert_called_once()
+        mock_index_books.assert_called_once()
+        mock_conn.close.assert_called_once()
+
+    @patch("textalyzer.indexer.index_books")
+    @patch("textalyzer.indexer.create_database")
+    @patch("textalyzer.indexer.DEFAULT_STORE_PATH")
+    @patch("textalyzer.indexer.DEFAULT_DB_PATH")
+    def test_main_closes_connection_on_error(
+        self,
+        mock_db_path: MagicMock,
+        mock_store_path: MagicMock,
+        mock_create_db: MagicMock,
+        mock_index_books: MagicMock,
+    ) -> None:
+        """main should close connection even if indexing fails."""
+        mock_store_path.exists.return_value = True
+        mock_conn = MagicMock()
+        mock_create_db.return_value = mock_conn
+        mock_index_books.side_effect = Exception("Indexing failed")
+
+        with pytest.raises(Exception, match="Indexing failed"):
+            main()
+
+        mock_conn.close.assert_called_once()

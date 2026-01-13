@@ -1,3 +1,7 @@
+# generated data - keep local
+text-store/
+db/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
