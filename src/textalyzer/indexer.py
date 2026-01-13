@@ -66,7 +66,7 @@ def parse_author_title(full_title: str) -> tuple[str, str]:
 
 def load_metadata(meta_path: Path) -> dict[str, str]:
     """Load metadata JSON and extract title field."""
-    with open(meta_path) as f:
+    with meta_path.open() as f:
         meta_list = json.load(f)
 
     # Find the title meta tag (name="title")

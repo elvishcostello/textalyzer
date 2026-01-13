@@ -65,6 +65,15 @@ class TestLoadBookIds:
 
         assert result == ["12345", "67890"]
 
+    def test_load_book_ids_strips_inline_comments(self, tmp_path: Path) -> None:
+        """load_book_ids should strip inline comments after #."""
+        book_ids_file = tmp_path / "book-ids.dat"
+        book_ids_file.write_text("1342  # Pride and Prejudice\n84 # Frankenstein\n")
+
+        result = load_book_ids(book_ids_file)
+
+        assert result == ["1342", "84"]
+
 
 class TestExtractMetaTags:
     """Tests for extract_meta_tags function."""

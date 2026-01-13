@@ -31,6 +31,7 @@ This document contains critical information about working with this codebase. Fo
     - Constants in UPPER_SNAKE_CASE
     - Document with docstrings
     - Use f-strings for formatting
+    - Use 'with Path(...).open() a f' for file operations.
 
 - For commits fixing bugs or adding features based on user reports add:
   ```bash

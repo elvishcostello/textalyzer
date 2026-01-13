@@ -20,16 +20,23 @@ logger = logging.getLogger(__name__)
 
 
 def load_book_ids(path: Path) -> list[str]:
-    """Load book IDs from a file, one ID per line."""
+    """Load book IDs from a file, one ID per line.
+
+    Supports comments: lines starting with # are ignored,
+    and inline comments (everything after #) are stripped.
+    """
     if not path.exists():
         logger.error(f"Book IDs file not found: {path}")
         return []
 
     ids = []
-    with open(path) as f:
+    with path.open() as f:
         for line in f:
+            # Strip inline comments
+            if "#" in line:
+                line = line.split("#", 1)[0]
             line = line.strip()
-            if line and not line.startswith("#"):
+            if line:
                 ids.append(line)
     return ids
 
