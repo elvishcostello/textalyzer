@@ -147,7 +147,61 @@ class TestSplitIntoParagraphs:
         result = split_into_paragraphs(content)
 
         assert len(result) == 2
-        assert all("[Illustration]" not in p for p in result)
+        assert all("[Illustration" not in p for p in result)
+
+    def test_split_into_paragraphs_filters_illustration_with_caption(self) -> None:
+        """split_into_paragraphs should filter [Illustration: caption]."""
+        content = "Normal paragraph.\n\n[Illustration: A lovely scene]\n\nAnother."
+
+        result = split_into_paragraphs(content)
+
+        assert len(result) == 2
+        assert all("[Illustration" not in p for p in result)
+
+    def test_split_into_paragraphs_filters_blank_page(self) -> None:
+        """split_into_paragraphs should filter [Blank Page] markers."""
+        content = "Normal paragraph.\n\n[Blank Page]\n\nAnother paragraph."
+
+        result = split_into_paragraphs(content)
+
+        assert len(result) == 2
+        assert all("[Blank Page]" not in p for p in result)
+
+    def test_split_into_paragraphs_filters_proofreader_comments(self) -> None:
+        """split_into_paragraphs should filter [** proofreader comments."""
+        content = "Normal paragraph.\n\n[** unclear text]\n\nAnother paragraph."
+
+        result = split_into_paragraphs(content)
+
+        assert len(result) == 2
+        assert all("[**" not in p for p in result)
+
+    def test_split_into_paragraphs_filters_transcriber_note(self) -> None:
+        """split_into_paragraphs should filter [Transcriber's Note."""
+        content = "Normal paragraph.\n\n[Transcriber's Note: Fixed typo]\n\nAnother."
+
+        result = split_into_paragraphs(content)
+
+        assert len(result) == 2
+        assert all("[Transcriber's Note" not in p for p in result)
+
+    def test_split_into_paragraphs_filters_editor_note(self) -> None:
+        """split_into_paragraphs should filter [Editor's Note."""
+        content = "Normal paragraph.\n\n[Editor's Note: See appendix]\n\nAnother."
+
+        result = split_into_paragraphs(content)
+
+        assert len(result) == 2
+        assert all("[Editor's Note" not in p for p in result)
+
+    def test_split_into_paragraphs_filters_technical_note(self) -> None:
+        """split_into_paragraphs should filter [Technical Note."""
+        content = "Normal paragraph.\n\n[Technical Note: Formula error]\n\nAnother."
+
+        result = split_into_paragraphs(content)
+
+        assert len(result) == 2
+        assert all("[Technical Note" not in p for p in result)
 
 
 class TestParseAuthorTitle:
