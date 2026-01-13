@@ -24,8 +24,25 @@ TEXT_URL_TEMPLATE = "https://www.gutenberg.org/cache/epub/{book_id}/pg{book_id}.
 EBOOK_URL_TEMPLATE = "https://www.gutenberg.org/ebooks/{book_id}"
 
 # Regex patterns for extracting book content
-START_MARKER_RE = re.compile(r"\*\*\* START OF THE PROJECT GUTENBERG EBOOK .+? \*\*\*")
-END_MARKER_RE = re.compile(r"\*\*\* END OF THE PROJECT GUTENBERG EBOOK .+? \*\*\*")
+# Flexible pattern to handle historical variations in Gutenberg markers
+START_MARKER_RE = re.compile(
+    r"\*+\s*"  # one or more asterisks
+    r"START\s+(?:OF\s+)?"  # START OF (OF optional)
+    r"(?:THIS\s+|THE\s+)?"  # optional THIS or THE
+    r"PROJECT\s+GUTENBERG"  # PROJECT GUTENBERG
+    r".*?"  # anything in between
+    r"\*+",  # ending asterisks
+    re.IGNORECASE,
+)
+END_MARKER_RE = re.compile(
+    r"\*+\s*"  # one or more asterisks
+    r"END\s+(?:OF\s+)?"  # END OF (OF optional)
+    r"(?:THIS\s+|THE\s+)?"  # optional THIS or THE
+    r"PROJECT\s+GUTENBERG"  # PROJECT GUTENBERG
+    r".*?"  # anything in between
+    r"\*+",  # ending asterisks
+    re.IGNORECASE,
+)
 
 # Indexing configuration
 MIN_PARAGRAPH_LENGTH = 4

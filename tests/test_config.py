@@ -96,6 +96,41 @@ class TestRegexPatterns:
         test_string = "*** START OF THE PROJECT GUTENBERG EBOOK TEST BOOK ***"
         assert END_MARKER_RE.search(test_string) is None
 
+    def test_start_marker_matches_this_variant(self) -> None:
+        """START_MARKER_RE should match 'THIS PROJECT GUTENBERG' variant."""
+        test_string = "*START OF THIS PROJECT GUTENBERG EBOOK*"
+        assert START_MARKER_RE.search(test_string) is not None
+
+    def test_start_marker_matches_without_of(self) -> None:
+        """START_MARKER_RE should match without 'OF'."""
+        test_string = "**START THE PROJECT GUTENBERG EBOOK**"
+        assert START_MARKER_RE.search(test_string) is not None
+
+    def test_start_marker_matches_minimal(self) -> None:
+        """START_MARKER_RE should match minimal format."""
+        test_string = "*START PROJECT GUTENBERG*"
+        assert START_MARKER_RE.search(test_string) is not None
+
+    def test_start_marker_case_insensitive(self) -> None:
+        """START_MARKER_RE should be case insensitive."""
+        test_string = "*** start of the project gutenberg ebook test ***"
+        assert START_MARKER_RE.search(test_string) is not None
+
+    def test_end_marker_matches_this_variant(self) -> None:
+        """END_MARKER_RE should match 'THIS PROJECT GUTENBERG' variant."""
+        test_string = "*END OF THIS PROJECT GUTENBERG EBOOK*"
+        assert END_MARKER_RE.search(test_string) is not None
+
+    def test_end_marker_matches_without_of(self) -> None:
+        """END_MARKER_RE should match without 'OF'."""
+        test_string = "**END THE PROJECT GUTENBERG EBOOK**"
+        assert END_MARKER_RE.search(test_string) is not None
+
+    def test_end_marker_case_insensitive(self) -> None:
+        """END_MARKER_RE should be case insensitive."""
+        test_string = "*** end of the project gutenberg ebook test ***"
+        assert END_MARKER_RE.search(test_string) is not None
+
 
 class TestSetupLogging:
     """Tests for setup_logging function."""
