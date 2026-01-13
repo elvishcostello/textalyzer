@@ -46,4 +46,14 @@ END_MARKER_RE = re.compile(
 
 # Indexing configuration
 MIN_PARAGRAPH_LENGTH = 4
-SKIP_PARAGRAPH_PATTERNS = ["[_Copyright", "[Illustration]"]
+
+# Patterns to skip when indexing paragraphs
+SKIP_PARAGRAPH_PATTERNS = [
+    "[Illustration",  # image markers: [Illustration] or [Illustration: caption]
+    "[Blank Page]",  # blank page indicators
+    "[**",  # proofreader/transcriber comments
+    "[Transcriber's Note",  # transcriber explanations
+    "[Editor's Note",  # editorial notes
+    "[Technical Note",  # technical annotations
+    "[_Copyright",  # copyright notices
+]

@@ -61,8 +61,13 @@ class TestConfigConstants:
 
     def test_skip_paragraph_patterns(self) -> None:
         """SKIP_PARAGRAPH_PATTERNS should contain expected patterns."""
+        assert "[Illustration" in SKIP_PARAGRAPH_PATTERNS
+        assert "[Blank Page]" in SKIP_PARAGRAPH_PATTERNS
+        assert "[**" in SKIP_PARAGRAPH_PATTERNS
+        assert "[Transcriber's Note" in SKIP_PARAGRAPH_PATTERNS
+        assert "[Editor's Note" in SKIP_PARAGRAPH_PATTERNS
+        assert "[Technical Note" in SKIP_PARAGRAPH_PATTERNS
         assert "[_Copyright" in SKIP_PARAGRAPH_PATTERNS
-        assert "[Illustration]" in SKIP_PARAGRAPH_PATTERNS
 
 
 class TestRegexPatterns:
