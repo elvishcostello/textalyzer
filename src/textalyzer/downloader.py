@@ -7,17 +7,16 @@ from pathlib import Path
 import httpx
 from bs4 import BeautifulSoup
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
+from textalyzer.config import (
+    DEFAULT_BOOK_IDS_PATH,
+    DEFAULT_STORE_PATH,
+    EBOOK_URL_TEMPLATE,
+    TEXT_URL_TEMPLATE,
+    setup_logging,
 )
+
+setup_logging()
 logger = logging.getLogger(__name__)
-
-TEXT_URL_TEMPLATE = "https://www.gutenberg.org/cache/epub/{book_id}/pg{book_id}.txt"
-EBOOK_URL_TEMPLATE = "https://www.gutenberg.org/ebooks/{book_id}"
-
-DEFAULT_BOOK_IDS_PATH = Path("book-ids.dat")
-DEFAULT_STORE_PATH = Path("text-store")
 
 
 def load_book_ids(path: Path) -> list[str]:

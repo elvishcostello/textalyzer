@@ -6,18 +6,16 @@ import re
 import sqlite3
 from pathlib import Path
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
+from textalyzer.config import (
+    DEFAULT_DB_PATH,
+    DEFAULT_STORE_PATH,
+    END_MARKER_RE,
+    START_MARKER_RE,
+    setup_logging,
 )
+
+setup_logging()
 logger = logging.getLogger(__name__)
-
-DEFAULT_STORE_PATH = Path("text-store")
-DEFAULT_DB_PATH = Path("db/text-search.db")
-
-# Regex to match content between START and END markers
-START_MARKER_RE = re.compile(r"\*\*\* START OF THE PROJECT GUTENBERG EBOOK .+? \*\*\*")
-END_MARKER_RE = re.compile(r"\*\*\* END OF THE PROJECT GUTENBERG EBOOK .+? \*\*\*")
 
 
 def extract_book_content(text: str) -> str | None:
