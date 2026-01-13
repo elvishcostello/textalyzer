@@ -13,6 +13,7 @@ from textalyzer.indexer import (
     load_metadata,
     main,
     parse_author_title,
+    split_into_paragraphs,
 )
 
 
@@ -24,8 +25,8 @@ class TestExtractBookContent:
         result = extract_book_content(sample_gutenberg_text)
 
         assert result is not None
-        assert "This is the actual content of the book" in result
-        assert "multiple lines" in result
+        assert "first paragraph" in result
+        assert "second paragraph" in result
         assert "START OF THE PROJECT" not in result
         assert "END OF THE PROJECT" not in result
 
@@ -70,6 +71,83 @@ Content here
         assert result is not None
         assert not result.startswith("\n")
         assert not result.endswith("\n")
+
+
+class TestSplitIntoParagraphs:
+    """Tests for split_into_paragraphs function."""
+
+    def test_split_into_paragraphs_basic(self) -> None:
+        """split_into_paragraphs should split on double newlines."""
+        content = "First paragraph.\n\nSecond paragraph.\n\nThird paragraph."
+
+        result = split_into_paragraphs(content)
+
+        assert len(result) == 3
+        assert result[0] == "First paragraph."
+        assert result[1] == "Second paragraph."
+        assert result[2] == "Third paragraph."
+
+    def test_split_into_paragraphs_filters_short(self) -> None:
+        """split_into_paragraphs should filter short paragraphs."""
+        content = "OK.\n\nAB\n\nThis is long enough."
+
+        result = split_into_paragraphs(content)
+
+        # "AB" is only 2 chars, should be filtered (MIN_PARAGRAPH_LENGTH is 4)
+        # "OK." is 3 chars, should be filtered
+        assert len(result) == 1
+        assert result[0] == "This is long enough."
+
+    def test_split_into_paragraphs_strips_whitespace(self) -> None:
+        """split_into_paragraphs should strip whitespace from each paragraph."""
+        content = "  First paragraph.  \n\n  Second paragraph.  "
+
+        result = split_into_paragraphs(content)
+
+        assert result[0] == "First paragraph."
+        assert result[1] == "Second paragraph."
+
+    def test_split_into_paragraphs_empty_content(self) -> None:
+        """split_into_paragraphs should return empty list for empty content."""
+        result = split_into_paragraphs("")
+
+        assert result == []
+
+    def test_split_into_paragraphs_single_paragraph(self) -> None:
+        """split_into_paragraphs should handle single paragraph."""
+        content = "Just one paragraph here."
+
+        result = split_into_paragraphs(content)
+
+        assert len(result) == 1
+        assert result[0] == "Just one paragraph here."
+
+    def test_split_into_paragraphs_multiple_blank_lines(self) -> None:
+        """split_into_paragraphs should handle multiple consecutive blank lines."""
+        content = "First.\n\n\n\nSecond."
+
+        result = split_into_paragraphs(content)
+
+        # Multiple blank lines create empty strings that get filtered
+        assert len(result) == 2
+
+    def test_split_into_paragraphs_filters_copyright(self) -> None:
+        """split_into_paragraphs should filter paragraphs with [_Copyright."""
+        content = "Normal paragraph.\n\n[_Copyright 1923]\n\nAnother paragraph."
+
+        result = split_into_paragraphs(content)
+
+        assert len(result) == 2
+        assert all("[_Copyright" not in p for p in result)
+
+    def test_split_into_paragraphs_filters_illustration(self) -> None:
+        """split_into_paragraphs should filter paragraphs with [Illustration]."""
+        content = "Normal paragraph.\n\n[Illustration]\n\nAnother paragraph."
+
+        result = split_into_paragraphs(content)
+
+        assert len(result) == 2
+        assert all("[Illustration]" not in p for p in result)
 
 
 class TestParseAuthorTitle:
@@ -259,15 +337,16 @@ class TestIndexBooks:
         sample_gutenberg_text: str,
         sample_metadata_json: str,
     ) -> None:
-        """index_books should index book with text and metadata."""
+        """index_books should index book paragraphs with text and metadata."""
         (tmp_path / "pg12345.txt").write_text(sample_gutenberg_text)
         (tmp_path / "12345-meta.json").write_text(sample_metadata_json)
         mock_conn = MagicMock()
 
         result = index_books(tmp_path, mock_conn)
 
-        assert result == 1
-        mock_conn.execute.assert_called()
+        # Sample text has 3 paragraphs
+        assert result == 3
+        assert mock_conn.execute.call_count == 3
         mock_conn.commit.assert_called_once()
 
     def test_index_books_skips_invalid_content(
@@ -296,7 +375,8 @@ class TestIndexBooks:
 
         result = index_books(tmp_path, mock_conn)
 
-        assert result == 3
+        # 3 books * 3 paragraphs each = 9 paragraphs
+        assert result == 9
 
 
 class TestMain:

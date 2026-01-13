@@ -26,3 +26,7 @@ EBOOK_URL_TEMPLATE = "https://www.gutenberg.org/ebooks/{book_id}"
 # Regex patterns for extracting book content
 START_MARKER_RE = re.compile(r"\*\*\* START OF THE PROJECT GUTENBERG EBOOK .+? \*\*\*")
 END_MARKER_RE = re.compile(r"\*\*\* END OF THE PROJECT GUTENBERG EBOOK .+? \*\*\*")
+
+# Indexing configuration
+MIN_PARAGRAPH_LENGTH = 4
+SKIP_PARAGRAPH_PATTERNS = ["[_Copyright", "[Illustration]"]

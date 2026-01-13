@@ -10,6 +10,8 @@ from textalyzer.config import (
     DEFAULT_DB_PATH,
     DEFAULT_STORE_PATH,
     END_MARKER_RE,
+    MIN_PARAGRAPH_LENGTH,
+    SKIP_PARAGRAPH_PATTERNS,
     START_MARKER_RE,
     setup_logging,
 )
@@ -33,6 +35,25 @@ def extract_book_content(text: str) -> str | None:
         return None
 
     return text[start_pos:end_pos].strip()
+
+
+def _should_skip_paragraph(text: str) -> bool:
+    """Check if paragraph should be skipped based on patterns."""
+    return any(pattern in text for pattern in SKIP_PARAGRAPH_PATTERNS)
+
+
+def split_into_paragraphs(content: str) -> list[str]:
+    """Split content into paragraphs on double newlines.
+
+    Filters out paragraphs shorter than MIN_PARAGRAPH_LENGTH and
+    paragraphs containing patterns in SKIP_PARAGRAPH_PATTERNS.
+    """
+    paragraphs = content.split("\n\n")
+    return [
+        p.strip()
+        for p in paragraphs
+        if len(p.strip()) >= MIN_PARAGRAPH_LENGTH and not _should_skip_paragraph(p)
+    ]
 
 
 def parse_author_title(full_title: str) -> tuple[str, str]:
@@ -78,6 +99,7 @@ def create_database(db_path: Path) -> sqlite3.Connection:
     conn.execute("""
         CREATE VIRTUAL TABLE books USING fts5(
             book_id,
+            paragraph_num,
             author,
             title,
             content,
@@ -89,7 +111,7 @@ def create_database(db_path: Path) -> sqlite3.Connection:
 
 
 def index_books(store_path: Path, conn: sqlite3.Connection) -> int:
-    """Index all books from store into database. Returns count indexed."""
+    """Index all books from store into database. Returns count of paragraphs indexed."""
     indexed = 0
 
     for txt_file in sorted(store_path.glob("pg*.txt")):
@@ -114,16 +136,27 @@ def index_books(store_path: Path, conn: sqlite3.Connection) -> int:
             logger.warning(f"[{book_id}] Could not extract content, skipping")
             continue
 
-        # Insert into FTS5
-        conn.execute(
-            "INSERT INTO books (book_id, author, title, content) VALUES (?, ?, ?, ?)",
-            (book_id, metadata["author"], metadata["title"], content),
-        )
+        # Split into paragraphs and insert each one
+        paragraphs = split_into_paragraphs(content)
+
+        for paragraph_num, paragraph in enumerate(paragraphs, start=1):
+            conn.execute(
+                "INSERT INTO books (book_id, paragraph_num, author, title, content) "
+                "VALUES (?, ?, ?, ?, ?)",
+                (
+                    book_id,
+                    paragraph_num,
+                    metadata["author"],
+                    metadata["title"],
+                    paragraph,
+                ),
+            )
+            indexed += 1
 
         logger.info(
-            f"[{book_id}] Indexed: {metadata['title'][:50]}... ({len(content)} chars)"
+            f"[{book_id}] Indexed: {metadata['title'][:50]}... "
+            f"({len(paragraphs)} paragraphs)"
         )
-        indexed += 1
 
     conn.commit()
     return indexed
