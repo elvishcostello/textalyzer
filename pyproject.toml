@@ -10,7 +10,8 @@ dependencies = [
 
 [project.scripts]
 textalyzer-download = "textalyzer.downloader:main"
-textalyzer-search = "textalyzer.indexer:main"
+textalyzer-index = "textalyzer.indexer:main"
+textalyzer-author-search = "textalyzer.author_search:main"
 
 [build-system]
 requires = ["hatchling"]

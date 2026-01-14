@@ -10,6 +10,7 @@ from textalyzer.config import (
     DEFAULT_STORE_PATH,
     EBOOK_URL_TEMPLATE,
     END_MARKER_RE,
+    GUTENDEX_API_URL,
     LOG_FORMAT,
     LOG_LEVEL,
     MIN_PARAGRAPH_LENGTH,
@@ -23,9 +24,9 @@ from textalyzer.config import (
 class TestConfigConstants:
     """Tests for configuration constants."""
 
-    def test_log_level_is_info(self) -> None:
-        """Log level should be INFO."""
-        assert LOG_LEVEL == logging.INFO
+    def test_log_level_is_warning(self) -> None:
+        """Log level should be WARNING."""
+        assert LOG_LEVEL == logging.WARNING
 
     def test_log_format_contains_required_fields(self) -> None:
         """Log format should contain timestamp, level, and message."""
@@ -54,6 +55,11 @@ class TestConfigConstants:
         """URL templates should point to gutenberg.org."""
         assert "gutenberg.org" in TEXT_URL_TEMPLATE
         assert "gutenberg.org" in EBOOK_URL_TEMPLATE
+
+    def test_gutendex_api_url(self) -> None:
+        """GUTENDEX_API_URL should point to gutendex.com."""
+        assert "gutendex.com" in GUTENDEX_API_URL
+        assert GUTENDEX_API_URL == "https://gutendex.com/books/"
 
     def test_min_paragraph_length(self) -> None:
         """MIN_PARAGRAPH_LENGTH should be set to 4."""

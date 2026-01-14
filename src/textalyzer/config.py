@@ -5,7 +5,7 @@ import re
 from pathlib import Path
 
 # Logging configuration
-LOG_LEVEL = logging.INFO
+LOG_LEVEL = logging.WARNING
 LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
 
 
@@ -22,6 +22,9 @@ DEFAULT_DB_PATH = Path("db/text-search.db")
 # Project Gutenberg URL templates
 TEXT_URL_TEMPLATE = "https://www.gutenberg.org/cache/epub/{book_id}/pg{book_id}.txt"
 EBOOK_URL_TEMPLATE = "https://www.gutenberg.org/ebooks/{book_id}"
+
+# Gutendex API for searching Project Gutenberg catalog
+GUTENDEX_API_URL = "https://gutendex.com/books/"
 
 # Regex patterns for extracting book content
 # Flexible pattern to handle historical variations in Gutenberg markers
