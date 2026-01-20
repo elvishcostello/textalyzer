@@ -2,6 +2,7 @@
 
 import argparse
 import logging
+import sys
 
 import httpx
 
@@ -9,6 +10,20 @@ from textalyzer.config import (
     GUTENDEX_API_URL,
     setup_logging,
 )
+
+GUTENDEX_CONNECTION_ERROR = """
+Error: Cannot connect to Gutendex API at {url}
+
+If using the local Docker instance:
+  1. Ensure Docker is running (colima start / Docker Desktop)
+  2. Start the Gutendex container: docker-compose up -d
+  3. Wait for the catalog import to complete (check: docker-compose logs -f gutendex)
+
+For the public API, edit src/textalyzer/config.py:
+  GUTENDEX_API_URL = "https://gutendex.com/books/"
+
+See docker/gutendex/README.md for setup instructions.
+""".strip()
 
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -48,9 +63,15 @@ def search_books_by_author(author: str) -> list[dict]:
 
         try:
             logger.debug(f"Fetching page {page}: {url} with params {params}")
-            response = httpx.get(url, params=params, timeout=30.0, follow_redirects=True)
+            response = httpx.get(
+                url, params=params, timeout=30.0, follow_redirects=True
+            )
             response.raise_for_status()
             data = response.json()
+        except httpx.ConnectError:
+            error_msg = GUTENDEX_CONNECTION_ERROR.format(url=GUTENDEX_API_URL)
+            print(error_msg, file=sys.stderr)
+            sys.exit(1)
         except httpx.HTTPError as e:
             logger.error(f"Failed to fetch from Gutendex: {e}")
             break
@@ -58,7 +79,9 @@ def search_books_by_author(author: str) -> list[dict]:
         count = data.get("count", 0)
         results = data.get("results", [])
         next_url = data.get("next")
-        logger.debug(f"Page {page}: count={count}, results={len(results)}, next={next_url}")
+        logger.debug(
+            f"Page {page}: count={count}, results={len(results)}, next={next_url}"
+        )
 
         # Filter results to only include books where author matches
         matches_on_page = 0

@@ -24,7 +24,9 @@ TEXT_URL_TEMPLATE = "https://www.gutenberg.org/cache/epub/{book_id}/pg{book_id}.
 EBOOK_URL_TEMPLATE = "https://www.gutenberg.org/ebooks/{book_id}"
 
 # Gutendex API for searching Project Gutenberg catalog
-GUTENDEX_API_URL = "https://gutendex.com/books/"
+# Uses local Docker instance by default. See docker/gutendex/README.md for setup.
+# For the public API, use: https://gutendex.com/books/
+GUTENDEX_API_URL = "http://localhost:8000/books/"
 
 # Regex patterns for extracting book content
 # Flexible pattern to handle historical variations in Gutenberg markers

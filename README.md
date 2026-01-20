@@ -68,6 +68,18 @@ uv run textalyzer-index
 
 This creates `db/text-search.db` with an FTS5 virtual table containing book paragraphs.
 
+## Gutendex Setup
+
+Textalyzer uses a local [Gutendex](https://gutendex.com) instance for searching Project Gutenberg. You'll need to set this up before using the author search feature.
+
+See [docker/gutendex/README.md](docker/gutendex/README.md) for setup instructions.
+
+To use the public Gutendex API instead, edit `src/textalyzer/config.py`:
+
+```python
+GUTENDEX_API_URL = "https://gutendex.com/books/"
+```
+
 ## Project Structure
 
 ```
