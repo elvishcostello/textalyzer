@@ -1,0 +1,53 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: gutendex
+      POSTGRES_USER: gutendex
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-gutendex}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gutendex -d gutendex"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  gutendex:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "${GUTENDEX_PORT:-8000}:8000"
+    environment:
+      # Database configuration
+      DATABASE_NAME: gutendex
+      DATABASE_USER: gutendex
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-gutendex}
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      # Django configuration
+      SECRET_KEY: ${SECRET_KEY:-change-me-in-production-use-long-random-string}
+      DEBUG: ${DEBUG:-false}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1}
+      # Static/media files (STATIC_ROOT must differ from STATICFILES_DIRS which is /app/static)
+      STATIC_ROOT: /app/staticfiles
+      MEDIA_ROOT: /app/media
+      # Email (optional - set dummy values if not needed)
+      EMAIL_HOST: ${EMAIL_HOST:-localhost}
+      EMAIL_HOST_USER: ${EMAIL_HOST_USER:-}
+      EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD:-}
+      EMAIL_HOST_ADDRESS: ${EMAIL_HOST_ADDRESS:-noreply@localhost}
+      # Set to true on first run to populate the catalog
+      UPDATE_CATALOG: ${UPDATE_CATALOG:-false}
+    volumes:
+      - static_files:/app/staticfiles
+      - media_files:/app/media
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  static_files:
+  media_files:
