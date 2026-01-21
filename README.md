@@ -24,7 +24,7 @@ uv sync
 Search Project Gutenberg for books by a specific author:
 
 ```bash
-uv run textalyzer-author-search "Jane Austen"
+uv run author-search "Jane Austen"
 ```
 
 This queries the Gutendex API and outputs matching book IDs to stdout in book-ids.dat format:
@@ -38,7 +38,7 @@ This queries the Gutendex API and outputs matching book IDs to stdout in book-id
 Append results to your book-ids.dat file:
 
 ```bash
-uv run textalyzer-author-search "Jane Austen" >> book-ids.dat
+uv run author-search "Jane Austen" >> book-ids.dat
 ```
 
 ### 2. Download Books
@@ -54,7 +54,7 @@ Create a `book-ids.dat` file with Project Gutenberg book IDs, or use the author 
 Then run the downloader:
 
 ```bash
-uv run textalyzer-download
+uv run download
 ```
 
 This downloads each book's text file and metadata to the `text-store/` directory.
@@ -64,7 +64,7 @@ This downloads each book's text file and metadata to the `text-store/` directory
 Index downloaded books into a searchable SQLite database:
 
 ```bash
-uv run textalyzer-index
+uv run index
 ```
 
 This creates `db/text-search.db` with an FTS5 virtual table containing book paragraphs.
@@ -81,7 +81,7 @@ whale | sea # Find paragraphs with either term
 Run the search:
 
 ```bash
-uv run textalyzer-search queries.txt
+uv run search queries.txt
 ```
 
 Output is TSV format with a comment header for each query:
