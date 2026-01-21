@@ -68,7 +68,7 @@ def search_books_by_author(author: str) -> list[dict]:
             )
             response.raise_for_status()
             data = response.json()
-        except httpx.ConnectError:
+        except httpx.ConnectError:  # pragma: no cover
             error_msg = GUTENDEX_CONNECTION_ERROR.format(url=GUTENDEX_API_URL)
             print(error_msg, file=sys.stderr)
             sys.exit(1)

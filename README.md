@@ -7,6 +7,7 @@ Download and analyze books from Project Gutenberg.
 - **Author search**: Search Project Gutenberg for books by author name
 - **Download books**: Fetch plain text books and metadata from Project Gutenberg
 - **Full-text search**: Index book paragraphs into SQLite FTS5 for fast full-text search
+- **Batch search**: Run multiple AND/OR queries from a file and output results as TSV
 
 ## Installation
 
@@ -68,6 +69,32 @@ uv run textalyzer-index
 
 This creates `db/text-search.db` with an FTS5 virtual table containing book paragraphs.
 
+### 4. Search Books
+
+Create a query file with one query per line. Use `&` for AND queries and `|` for OR queries:
+
+```
+pride & prejudice # Find paragraphs with both terms
+whale | sea # Find paragraphs with either term
+```
+
+Run the search:
+
+```bash
+uv run textalyzer-search queries.txt
+```
+
+Output is TSV format with a comment header for each query:
+
+```
+# Query: pride & prejudice
+# Original comment: Find paragraphs with both terms
+book_id	paragraph_num	author	title	content
+1342	19	Jane Austen	Pride and Prejudice	...content here...
+```
+
+Results are limited to 100 per query, ordered by paragraph number.
+
 ## Gutendex Setup
 
 Textalyzer uses a local [Gutendex](https://gutendex.com) instance for searching Project Gutenberg. You'll need to set this up before using the author search feature.
@@ -88,7 +115,8 @@ src/textalyzer/
 ├── author_search.py  # Search Gutendex API for books by author
 ├── config.py         # Shared configuration (paths, URLs, patterns)
 ├── downloader.py     # Download books and metadata from Gutenberg
-└── indexer.py        # Index book paragraphs into SQLite FTS5
+├── indexer.py        # Index book paragraphs into SQLite FTS5
+└── search.py         # Batch search using FTS5 queries
 ```
 
 ## Development

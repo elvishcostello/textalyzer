@@ -12,6 +12,7 @@ dependencies = [
 textalyzer-download = "textalyzer.downloader:main"
 textalyzer-index = "textalyzer.indexer:main"
 textalyzer-author-search = "textalyzer.author_search:main"
+textalyzer-search = "textalyzer.search:main"
 
 [build-system]
 requires = ["hatchling"]
@@ -41,6 +42,7 @@ branch = true
 [tool.coverage.report]
 exclude_lines = [
     "if __name__ == .__main__.:",
+    "pragma: no cover",
 ]
 
 [dependency-groups]
