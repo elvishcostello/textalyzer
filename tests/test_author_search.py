@@ -5,11 +5,36 @@ from unittest.mock import MagicMock, patch
 import httpx
 
 from textalyzer.author_search import (
+    extract_last_name,
     format_book_line,
     main,
     normalize_author_name,
     search_books_by_author,
 )
+
+
+class TestExtractLastName:
+    """Tests for extract_last_name function."""
+
+    def test_extract_simple_name(self) -> None:
+        """extract_last_name should return last word of simple name."""
+        assert extract_last_name("Jane Austen") == "Austen"
+
+    def test_extract_name_with_initials(self) -> None:
+        """extract_last_name should return last word for names with initials."""
+        assert extract_last_name("P. G. Wodehouse") == "Wodehouse"
+
+    def test_extract_name_with_middle_name(self) -> None:
+        """extract_last_name should return last word for names with middle names."""
+        assert extract_last_name("Arthur Conan Doyle") == "Doyle"
+
+    def test_extract_single_name(self) -> None:
+        """extract_last_name should return the name if only one word."""
+        assert extract_last_name("Voltaire") == "Voltaire"
+
+    def test_extract_name_with_multiple_initials(self) -> None:
+        """extract_last_name should handle multiple initials."""
+        assert extract_last_name("Dorothy L. Sayers") == "Sayers"
 
 
 class TestNormalizeAuthorName:
@@ -34,6 +59,34 @@ class TestNormalizeAuthorName:
         """normalize_author_name should preserve middle names."""
         result = normalize_author_name("Doyle, Arthur Conan")
         assert result == "arthur conan doyle"
+
+    def test_normalize_removes_periods_from_initials(self) -> None:
+        """normalize_author_name should remove periods from initials."""
+        result = normalize_author_name("E. M. Forster")
+        assert result == "e m forster"
+
+    def test_normalize_handles_initials_without_spaces(self) -> None:
+        """normalize_author_name should handle initials without spaces."""
+        result = normalize_author_name("Forster, E.M.")
+        assert result == "e m forster"
+
+    def test_normalize_initials_match_regardless_of_spacing(self) -> None:
+        """normalize_author_name should normalize initials consistently."""
+        spaced = normalize_author_name("E. M. Forster")
+        unspaced = normalize_author_name("E.M. Forster")
+        from_api = normalize_author_name("Forster, E.M.")
+        assert spaced == unspaced == from_api
+
+    def test_normalize_strips_parenthetical_suffix(self) -> None:
+        """normalize_author_name should strip parenthetical suffixes."""
+        result = normalize_author_name("Sayers, Dorothy L. (Dorothy Leigh)")
+        assert result == "dorothy l sayers"
+
+    def test_normalize_with_parenthetical_matches_without(self) -> None:
+        """normalize_author_name should match with or without parenthetical."""
+        with_parens = normalize_author_name("Sayers, Dorothy L. (Dorothy Leigh)")
+        without_parens = normalize_author_name("Dorothy L. Sayers")
+        assert with_parens == without_parens
 
 
 class TestSearchBooksByAuthor:
@@ -212,6 +265,7 @@ class TestMain:
 
         mock_search.assert_called_once_with("Jane Austen")
         captured = capsys.readouterr()
+        assert "# Search: Jane Austen" in captured.out
         assert "1342  # Pride and Prejudice" in captured.out
         assert "161  # Sense and Sensibility" in captured.out
 
@@ -221,7 +275,7 @@ class TestMain:
         mock_search: MagicMock,
         capsys: MagicMock,
     ) -> None:
-        """main should print nothing when no books are found."""
+        """main should print search comment even when no books are found."""
         mock_search.return_value = []
 
         with patch("sys.argv", ["prog", "Unknown Author"]):
@@ -229,7 +283,7 @@ class TestMain:
 
         mock_search.assert_called_once_with("Unknown Author")
         captured = capsys.readouterr()
-        assert captured.out == ""
+        assert captured.out == "# Search: Unknown Author\n"
 
     @patch("textalyzer.author_search.search_books_by_author")
     def test_main_debug_flag(

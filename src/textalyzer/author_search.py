@@ -30,15 +30,35 @@ setup_logging()
 logger = logging.getLogger(__name__)
 
 
+def extract_last_name(name: str) -> str:
+    """Extract the last name from an author name for API search.
+
+    Returns the last word after splitting on spaces. This helps with authors
+    who have initials (e.g., "P. G. Wodehouse" -> "Wodehouse") since the
+    Gutendex API doesn't handle initials well in search queries.
+    """
+    parts = name.split()
+    return parts[-1] if parts else name
+
+
 def normalize_author_name(name: str) -> str:
     """Normalize author name for comparison.
 
     Handles "Last, First" format from Gutendex and converts to lowercase.
+    Also normalizes initials by replacing periods with spaces and collapsing
+    so "E. M. Forster" and "E.M. Forster" both become "e m forster".
+    Strips parenthetical suffixes like "(Dorothy Leigh)" from names.
     """
+    # Strip parenthetical suffixes (e.g., "Dorothy L. (Dorothy Leigh)")
+    if "(" in name:
+        name = name[: name.index("(")]
     # Gutendex returns names as "Austen, Jane" - normalize both formats
     if "," in name:
         parts = name.split(",", 1)
         name = f"{parts[1].strip()} {parts[0].strip()}"
+    # Replace periods with spaces (for initials) and collapse multiple spaces
+    name = name.replace(".", " ")
+    name = " ".join(name.split())
     return name.lower()
 
 
@@ -50,8 +70,11 @@ def search_books_by_author(author: str) -> list[dict]:
     logger.info(f"Searching for books by '{author}'...")
 
     all_books = []
-    encoded_author = quote(author)
-    url: str | None = f"{GUTENDEX_API_URL}?search={encoded_author}&languages=en"
+    # Use only the last name for API search to handle authors with initials
+    # (e.g., "P. G. Wodehouse" -> search for "Wodehouse")
+    last_name = extract_last_name(author)
+    encoded_last_name = quote(last_name)
+    url: str | None = f"{GUTENDEX_API_URL}?search={encoded_last_name}&languages=en"
     normalized_search = normalize_author_name(author)
 
     max_pages = 100  # Safety limit
@@ -143,6 +166,7 @@ def main() -> None:
 
     books = search_books_by_author(args.author)
 
+    print(f"# Search: {args.author}")
     for book in books:
         print(format_book_line(book))
 
