@@ -5,12 +5,12 @@ import pytest
 
 @pytest.fixture
 def sample_book_ids_content() -> str:
-    """Sample book IDs file content."""
+    """Sample book IDs file content (tab-separated CSV)."""
     return """# Comment line
-12345
-67890
+12345\tBook One\tFiction\tSummary one
+67890\tBook Two\tNon-fiction\tSummary two
 # Another comment
-11111
+11111\tBook Three\tMystery\tSummary three
 """
 
 

@@ -20,10 +20,10 @@ logger = logging.getLogger(__name__)
 
 
 def load_book_ids(path: Path) -> list[str]:
-    """Load book IDs from a file, one ID per line.
+    """Load book IDs from a CSV file.
 
-    Supports comments: lines starting with # are ignored,
-    and inline comments (everything after #) are stripped.
+    Expects tab-separated format with ID in the first column.
+    Lines starting with # are treated as comments and ignored.
     """
     if not path.exists():
         logger.error(f"Book IDs file not found: {path}")
@@ -32,12 +32,13 @@ def load_book_ids(path: Path) -> list[str]:
     ids = []
     with path.open() as f:
         for line in f:
-            # Strip inline comments
-            if "#" in line:
-                line = line.split("#", 1)[0]
             line = line.strip()
-            if line:
-                ids.append(line)
+            if not line or line.startswith("#"):
+                continue
+            # Take first column (tab-separated)
+            book_id = line.split("\t")[0].strip()
+            if book_id:
+                ids.append(book_id)
     return ids
 
 
@@ -105,7 +106,7 @@ def main() -> None:
     """Main entry point for the downloader."""
     book_ids = load_book_ids(DEFAULT_BOOK_IDS_PATH)
     if not book_ids:
-        logger.error("No book IDs found. Create book-ids.dat with one ID per line.")
+        logger.error("No book IDs found. Create books.csv with one ID per line.")
         return
 
     logger.info(f"Found {len(book_ids)} book ID(s) to process")

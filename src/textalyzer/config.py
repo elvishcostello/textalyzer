@@ -15,7 +15,7 @@ def setup_logging() -> None:
 
 
 # Path configuration
-DEFAULT_BOOK_IDS_PATH = Path("book-ids.dat")
+DEFAULT_BOOK_IDS_PATH = Path("books.csv")
 DEFAULT_STORE_PATH = Path("text-store")
 DEFAULT_DB_PATH = Path("db/text-search.db")
 

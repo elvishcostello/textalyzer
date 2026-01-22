@@ -42,7 +42,7 @@ class TestConfigConstants:
 
     def test_default_path_values(self) -> None:
         """Default paths should have expected values."""
-        assert DEFAULT_BOOK_IDS_PATH == Path("book-ids.dat")
+        assert DEFAULT_BOOK_IDS_PATH == Path("books.csv")
         assert DEFAULT_STORE_PATH == Path("text-store")
         assert DEFAULT_DB_PATH == Path("db/text-search.db")
 
@@ -57,9 +57,8 @@ class TestConfigConstants:
         assert "gutenberg.org" in EBOOK_URL_TEMPLATE
 
     def test_gutendex_api_url(self) -> None:
-        """GUTENDEX_API_URL should point to gutendex.com."""
-        assert "gutendex.com" in GUTENDEX_API_URL
-        assert GUTENDEX_API_URL == "https://gutendex.com/books/"
+        """GUTENDEX_API_URL should point to local Gutendex instance."""
+        assert GUTENDEX_API_URL == "http://localhost:8000/books/"
 
     def test_min_paragraph_length(self) -> None:
         """MIN_PARAGRAPH_LENGTH should be set to 4."""

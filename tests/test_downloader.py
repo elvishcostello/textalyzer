@@ -22,7 +22,7 @@ class TestLoadBookIds:
         self, tmp_path: Path, sample_book_ids_content: str
     ) -> None:
         """load_book_ids should return a list of IDs."""
-        book_ids_file = tmp_path / "book-ids.dat"
+        book_ids_file = tmp_path / "books.csv"
         book_ids_file.write_text(sample_book_ids_content)
 
         result = load_book_ids(book_ids_file)
@@ -32,7 +32,7 @@ class TestLoadBookIds:
 
     def test_load_book_ids_skips_comments(self, tmp_path: Path) -> None:
         """load_book_ids should skip comment lines."""
-        book_ids_file = tmp_path / "book-ids.dat"
+        book_ids_file = tmp_path / "books.csv"
         book_ids_file.write_text("# This is a comment\n12345\n# Another\n")
 
         result = load_book_ids(book_ids_file)
@@ -41,7 +41,7 @@ class TestLoadBookIds:
 
     def test_load_book_ids_skips_empty_lines(self, tmp_path: Path) -> None:
         """load_book_ids should skip empty lines."""
-        book_ids_file = tmp_path / "book-ids.dat"
+        book_ids_file = tmp_path / "books.csv"
         book_ids_file.write_text("12345\n\n\n67890\n")
 
         result = load_book_ids(book_ids_file)
@@ -58,17 +58,17 @@ class TestLoadBookIds:
 
     def test_load_book_ids_strips_whitespace(self, tmp_path: Path) -> None:
         """load_book_ids should strip whitespace from IDs."""
-        book_ids_file = tmp_path / "book-ids.dat"
+        book_ids_file = tmp_path / "books.csv"
         book_ids_file.write_text("  12345  \n  67890\n")
 
         result = load_book_ids(book_ids_file)
 
         assert result == ["12345", "67890"]
 
-    def test_load_book_ids_strips_inline_comments(self, tmp_path: Path) -> None:
-        """load_book_ids should strip inline comments after #."""
-        book_ids_file = tmp_path / "book-ids.dat"
-        book_ids_file.write_text("1342  # Pride and Prejudice\n84 # Frankenstein\n")
+    def test_load_book_ids_extracts_first_column(self, tmp_path: Path) -> None:
+        """load_book_ids should extract ID from first tab-separated column."""
+        book_ids_file = tmp_path / "books.csv"
+        book_ids_file.write_text("1342\tPride and Prejudice\tFiction\n84\tFrankenstein\tHorror\n")
 
         result = load_book_ids(book_ids_file)
 

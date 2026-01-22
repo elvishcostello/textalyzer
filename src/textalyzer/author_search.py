@@ -41,17 +41,30 @@ def normalize_author_name(name: str) -> str:
     return name.lower()
 
 
+def author_matches(search_name: str, api_name: str) -> bool:
+    """Check if all words from search_name appear in api_name.
+
+    Uses soft matching so extra words in api_name (like full names in
+    parentheses) don't prevent a match.
+    """
+    search_normalized = normalize_author_name(search_name)
+    api_normalized = normalize_author_name(api_name)
+    search_words = set(search_normalized.split())
+    api_words = set(api_normalized.split())
+    return search_words <= api_words
+
+
 def search_books_by_author(author: str) -> list[dict]:
     """Search Gutendex API for books by the given author.
 
-    Returns a list of book dicts with 'id', 'title', and 'authors' keys.
+    Returns a list of book dicts with 'id', 'title', 'authors', 'subjects',
+    and 'summaries' keys.
     """
     logger.info(f"Searching for books by '{author}'...")
 
     all_books = []
     url: str | None = GUTENDEX_API_URL
     params: dict[str, str] | None = {"search": author}
-    normalized_search = normalize_author_name(author)
 
     max_pages = 100  # Safety limit
     page = 0
@@ -88,12 +101,14 @@ def search_books_by_author(author: str) -> list[dict]:
         for book in results:
             for book_author in book.get("authors", []):
                 author_name = book_author.get("name", "")
-                if normalized_search in normalize_author_name(author_name):
+                if author_matches(author, author_name):
                     all_books.append(
                         {
                             "id": book["id"],
                             "title": book["title"],
                             "authors": [a["name"] for a in book.get("authors", [])],
+                            "subjects": book.get("subjects", []),
+                            "summaries": book.get("summaries", []),
                         }
                     )
                     matches_on_page += 1
@@ -110,13 +125,17 @@ def search_books_by_author(author: str) -> list[dict]:
 
 
 def format_book_line(book: dict) -> str:
-    """Format a book as a book-ids.dat line.
+    """Format a book as a tab-separated line.
 
-    Returns a string like '1342  # Pride and Prejudice'.
+    Returns a tab-separated string with: ID, TITLE, SUBJECT, SUMMARY.
     """
     book_id = str(book["id"])
-    title = book["title"][:50]  # Truncate long titles
-    return f"{book_id}  # {title}"
+    title = book["title"]
+    subjects = book.get("subjects", [])
+    subject = subjects[0] if subjects else ""
+    summaries = book.get("summaries", [])
+    summary = summaries[0] if summaries else ""
+    return f"{book_id}\t{title}\t{subject}\t{summary}"
 
 
 def main() -> None:

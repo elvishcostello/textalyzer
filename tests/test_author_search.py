@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, patch
 import httpx
 
 from textalyzer.author_search import (
+    author_matches,
     format_book_line,
     main,
     normalize_author_name,
@@ -34,6 +35,28 @@ class TestNormalizeAuthorName:
         """normalize_author_name should preserve middle names."""
         result = normalize_author_name("Doyle, Arthur Conan")
         assert result == "arthur conan doyle"
+
+
+class TestAuthorMatches:
+    """Tests for author_matches function."""
+
+    def test_exact_match(self) -> None:
+        """author_matches should match identical names."""
+        assert author_matches("Jane Austen", "Austen, Jane")
+
+    def test_match_with_parenthetical(self) -> None:
+        """author_matches should match when API has extra info in parentheses."""
+        assert author_matches(
+            "Dorothy L. Sayers", "Sayers, Dorothy L. (Dorothy Leigh)"
+        )
+
+    def test_no_match_different_author(self) -> None:
+        """author_matches should not match different authors."""
+        assert not author_matches("Jane Austen", "Dickens, Charles")
+
+    def test_partial_name_no_match(self) -> None:
+        """author_matches should not match if search has words not in API name."""
+        assert not author_matches("Dorothy L. Sayers", "Sayers, W. C. Berwick")
 
 
 class TestSearchBooksByAuthor:
@@ -138,23 +161,64 @@ class TestFormatBookLine:
     """Tests for format_book_line function."""
 
     def test_format_basic_book(self) -> None:
-        """format_book_line should format book ID with title comment."""
-        book = {"id": 1342, "title": "Pride and Prejudice", "authors": ["Austen"]}
+        """format_book_line should format book as tab-separated fields."""
+        book = {
+            "id": 1342,
+            "title": "Pride and Prejudice",
+            "authors": ["Austen"],
+            "subjects": ["Romance", "Fiction"],
+            "summaries": ["A classic novel about love and society."],
+        }
 
         result = format_book_line(book)
 
-        assert result == "1342  # Pride and Prejudice"
+        parts = result.split("\t")
+        assert parts[0] == "1342"
+        assert parts[1] == "Pride and Prejudice"
+        assert parts[2] == "Romance"
+        assert parts[3] == "A classic novel about love and society."
 
-    def test_format_truncates_long_titles(self) -> None:
-        """format_book_line should truncate titles longer than 50 chars."""
-        long_title = "A" * 100
-        book = {"id": 123, "title": long_title, "authors": ["Author"]}
+    def test_format_handles_empty_subjects(self) -> None:
+        """format_book_line should handle empty subjects list."""
+        book = {
+            "id": 123,
+            "title": "Test Book",
+            "authors": ["Author"],
+            "subjects": [],
+            "summaries": ["A summary."],
+        }
 
         result = format_book_line(book)
 
-        assert "A" * 50 in result
-        assert "A" * 51 not in result
-        assert result.startswith("123  # ")
+        parts = result.split("\t")
+        assert parts[2] == ""
+
+    def test_format_handles_empty_summaries(self) -> None:
+        """format_book_line should handle empty summaries list."""
+        book = {
+            "id": 123,
+            "title": "Test Book",
+            "authors": ["Author"],
+            "subjects": ["Fiction"],
+            "summaries": [],
+        }
+
+        result = format_book_line(book)
+
+        parts = result.split("\t")
+        assert parts[3] == ""
+
+    def test_format_handles_missing_fields(self) -> None:
+        """format_book_line should handle missing subjects and summaries."""
+        book = {"id": 123, "title": "Test Book", "authors": ["Author"]}
+
+        result = format_book_line(book)
+
+        parts = result.split("\t")
+        assert parts[0] == "123"
+        assert parts[1] == "Test Book"
+        assert parts[2] == ""
+        assert parts[3] == ""
 
 
 class TestMain:
@@ -168,8 +232,20 @@ class TestMain:
     ) -> None:
         """main should search for author and print results to stdout."""
         mock_search.return_value = [
-            {"id": 1342, "title": "Pride and Prejudice", "authors": ["Austen"]},
-            {"id": 161, "title": "Sense and Sensibility", "authors": ["Austen"]},
+            {
+                "id": 1342,
+                "title": "Pride and Prejudice",
+                "authors": ["Austen"],
+                "subjects": ["Romance"],
+                "summaries": ["A classic."],
+            },
+            {
+                "id": 161,
+                "title": "Sense and Sensibility",
+                "authors": ["Austen"],
+                "subjects": ["Fiction"],
+                "summaries": ["Another classic."],
+            },
         ]
 
         with patch("sys.argv", ["prog", "Jane Austen"]):
@@ -177,8 +253,8 @@ class TestMain:
 
         mock_search.assert_called_once_with("Jane Austen")
         captured = capsys.readouterr()
-        assert "1342  # Pride and Prejudice" in captured.out
-        assert "161  # Sense and Sensibility" in captured.out
+        assert "1342\tPride and Prejudice\tRomance\tA classic." in captured.out
+        assert "161\tSense and Sensibility\tFiction\tAnother classic." in captured.out
 
     @patch("textalyzer.author_search.search_books_by_author")
     def test_main_handles_no_results(
