@@ -7,6 +7,7 @@ Download and analyze books from Project Gutenberg.
 - **Author search**: Search Project Gutenberg for books by author name
 - **Download books**: Fetch plain text books and metadata from Project Gutenberg
 - **Full-text search**: Index book paragraphs into SQLite FTS5 for fast full-text search
+- **Batch search**: Run multiple AND/OR queries from a file and output results as TSV
 
 ## Installation
 
@@ -23,7 +24,7 @@ uv sync
 Search Project Gutenberg for books by a specific author:
 
 ```bash
-uv run textalyzer-author-search "Jane Austen"
+uv run author-search "Jane Austen"
 ```
 
 This queries the Gutendex API and outputs matching book IDs to stdout in book-ids.dat format:
@@ -37,7 +38,7 @@ This queries the Gutendex API and outputs matching book IDs to stdout in book-id
 Append results to your book-ids.dat file:
 
 ```bash
-uv run textalyzer-author-search "Jane Austen" >> book-ids.dat
+uv run author-search "Jane Austen" >> book-ids.dat
 ```
 
 ### 2. Download Books
@@ -53,7 +54,7 @@ Create a `book-ids.dat` file with Project Gutenberg book IDs, or use the author 
 Then run the downloader:
 
 ```bash
-uv run textalyzer-download
+uv run download
 ```
 
 This downloads each book's text file and metadata to the `text-store/` directory.
@@ -63,10 +64,36 @@ This downloads each book's text file and metadata to the `text-store/` directory
 Index downloaded books into a searchable SQLite database:
 
 ```bash
-uv run textalyzer-index
+uv run index
 ```
 
 This creates `db/text-search.db` with an FTS5 virtual table containing book paragraphs.
+
+### 4. Search Books
+
+Create a query file with one query per line. Use `&` for AND queries and `|` for OR queries:
+
+```
+pride & prejudice # Find paragraphs with both terms
+whale | sea # Find paragraphs with either term
+```
+
+Run the search:
+
+```bash
+uv run search queries.txt
+```
+
+Output is TSV format with a comment header for each query:
+
+```
+# Query: pride & prejudice
+# Original comment: Find paragraphs with both terms
+book_id	paragraph_num	author	title	content
+1342	19	Jane Austen	Pride and Prejudice	...content here...
+```
+
+Results are limited to 100 per query, ordered by paragraph number.
 
 ## Gutendex Setup
 
@@ -88,7 +115,8 @@ src/textalyzer/
 ├── author_search.py  # Search Gutendex API for books by author
 ├── config.py         # Shared configuration (paths, URLs, patterns)
 ├── downloader.py     # Download books and metadata from Gutenberg
-└── indexer.py        # Index book paragraphs into SQLite FTS5
+├── indexer.py        # Index book paragraphs into SQLite FTS5
+└── search.py         # Batch search using FTS5 queries
 ```
 
 ## Development
