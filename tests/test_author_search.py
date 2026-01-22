@@ -156,6 +156,41 @@ class TestSearchBooksByAuthor:
 
         assert result == []
 
+    @patch("textalyzer.author_search.httpx.get")
+    def test_search_deduplicates_by_title_keeping_highest_id(
+        self, mock_get: MagicMock
+    ) -> None:
+        """search_books_by_author should dedupe by title, keeping highest ID."""
+        mock_response = MagicMock()
+        mock_response.json.return_value = {
+            "count": 3,
+            "next": None,
+            "results": [
+                {
+                    "id": 100,
+                    "title": "Pride and Prejudice",
+                    "authors": [{"name": "Austen, Jane"}],
+                },
+                {
+                    "id": 500,
+                    "title": "Pride and Prejudice",
+                    "authors": [{"name": "Austen, Jane"}],
+                },
+                {
+                    "id": 200,
+                    "title": "Pride and Prejudice",
+                    "authors": [{"name": "Austen, Jane"}],
+                },
+            ],
+        }
+        mock_response.raise_for_status = MagicMock()
+        mock_get.return_value = mock_response
+
+        result = search_books_by_author("Jane Austen")
+
+        assert len(result) == 1
+        assert result[0]["id"] == 500
+
 
 class TestFormatBookLine:
     """Tests for format_book_line function."""

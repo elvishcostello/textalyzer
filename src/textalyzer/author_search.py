@@ -64,7 +64,7 @@ def search_books_by_author(author: str) -> list[dict]:
 
     all_books = []
     url: str | None = GUTENDEX_API_URL
-    params: dict[str, str] | None = {"search": author}
+    params: dict[str, str] | None = {"search": author, "languages": "en"}
 
     max_pages = 100  # Safety limit
     page = 0
@@ -119,6 +119,14 @@ def search_books_by_author(author: str) -> list[dict]:
         # Follow pagination - next URL already contains query params
         url = next_url
         params = None
+
+    # Deduplicate by title, keeping the book with the highest ID
+    seen_titles: dict[str, dict] = {}
+    for book in all_books:
+        title = book["title"]
+        if title not in seen_titles or book["id"] > seen_titles[title]["id"]:
+            seen_titles[title] = book
+    all_books = list(seen_titles.values())
 
     logger.info(f"Found {len(all_books)} book(s) by '{author}'")
     return all_books
