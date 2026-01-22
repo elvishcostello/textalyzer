@@ -3,6 +3,7 @@
 import argparse
 import logging
 import sys
+from urllib.parse import quote
 
 import httpx
 
@@ -49,8 +50,8 @@ def search_books_by_author(author: str) -> list[dict]:
     logger.info(f"Searching for books by '{author}'...")
 
     all_books = []
-    url: str | None = GUTENDEX_API_URL
-    params: dict[str, str] | None = {"search": author}
+    encoded_author = quote(author)
+    url: str | None = f"{GUTENDEX_API_URL}?search={encoded_author}&languages=en"
     normalized_search = normalize_author_name(author)
 
     max_pages = 100  # Safety limit
@@ -62,10 +63,8 @@ def search_books_by_author(author: str) -> list[dict]:
             break
 
         try:
-            logger.debug(f"Fetching page {page}: {url} with params {params}")
-            response = httpx.get(
-                url, params=params, timeout=30.0, follow_redirects=True
-            )
+            logger.debug(f"Fetching page {page}: {url}")
+            response = httpx.get(url, timeout=30.0, follow_redirects=True)
             response.raise_for_status()
             data = response.json()
         except httpx.ConnectError:  # pragma: no cover
@@ -103,7 +102,6 @@ def search_books_by_author(author: str) -> list[dict]:
 
         # Follow pagination - next URL already contains query params
         url = next_url
-        params = None
 
     logger.info(f"Found {len(all_books)} book(s) by '{author}'")
     return all_books
