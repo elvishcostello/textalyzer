@@ -103,6 +103,14 @@ def search_books_by_author(author: str) -> list[dict]:
         # Follow pagination - next URL already contains query params
         url = next_url
 
+    # Deduplicate by title, keeping highest ID (most recent)
+    seen_titles: dict[str, dict] = {}
+    for book in all_books:
+        title = book["title"]
+        if title not in seen_titles or book["id"] > seen_titles[title]["id"]:
+            seen_titles[title] = book
+    all_books = list(seen_titles.values())
+
     logger.info(f"Found {len(all_books)} book(s) by '{author}'")
     return all_books
 
